@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniTool — Private Client-Side Media Suite</title>
+  <!-- Tailwind CSS via CDN for rapid, modern styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF-Lib for local, zero-server PDF manipulation -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #18181b;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-[#09090b] text-[#fafafa] min-h-screen flex flex-col antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+
+  <!-- Minimal Header -->
+  <header class="border-b border-[#27272a] bg-[#09090b]/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-[#09090b] font-bold text-sm">
+          OT
+        </div>
+        <span class="font-semibold text-sm tracking-tight text-white">OmniTool</span>
+        <span class="text-xs bg-[#18181b] border border-[#27272a] text-[#a1a1aa] px-2 py-0.5 rounded-full font-mono">v1.0</span>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <div class="flex items-center bg-[#18181b] p-1 rounded-xl border border-[#27272a]">
+        <button id="navImage" onclick="switchCategory('image')" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all bg-[#27272a] text-white">
+          Image Studio
+        </button>
+        <button id="navPdf" onclick="switchCategory('pdf')" class="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[#a1a1aa] hover:text-white">
+          PDF Suite
+        </button>
+      </div>
+
+      <!-- Trust Badge -->
+      <div class="hidden sm:flex items-center gap-2 text-xs font-medium text-[#71717a]">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+        100% Client-Side
+      </div>
+    </div>
+  </header>
+
+  <!-- Main App Workspace -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-6 py-10 flex flex-col items-center">
+
+    <!-- ==================== IMAGE SUITE SECTION ==================== -->
+    <section id="imageSection" class="w-full max-w-3xl flex flex-col gap-6">
+      
+      <!-- Sub-tool Tabs -->
+      <div class="flex items-center justify-center gap-2">
+        <button onclick="switchImgTool('compress')" id="btnToolCompress" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-indigo-500/30 bg-indigo-500/10 text-indigo-300">
+          Compressor
+        </button>
+        <button onclick="switchImgTool('convert')" id="btnToolConvert" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-[#27272a] text-[#a1a1aa] hover:bg-[#18181b] hover:text-white">
+          Format Converter
+        </button>
+        <button onclick="switchImgTool('resize')" id="btnToolResize" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-[#27272a] text-[#a1a1aa] hover:bg-[#18181b] hover:text-white">
+          Dimension Resizer
+        </button>
+      </div>
+
+      <!-- Image Dropzone (Empty State) -->
+      <div id="imageDropzone" class="border-2 border-dashed border-[#27272a] hover:border-[#3f3f46] transition-colors rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer bg-[#0f0f11]/50 relative group">
+        <input type="file" id="imgInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleImageUpload(event)" />
+        <div class="w-12 h-12 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        </div>
+        <p class="text-sm font-medium text-white mb-1">Drop your image here, or <span class="text-indigo-400 underline underline-offset-4">browse</span></p>
+        <p class="text-xs text-[#71717a]">Supports JPG, PNG, WebP • Up to 25MB</p>
+      </div>
+
+      <!-- Image Workspace Card (Active State) -->
+      <div id="imageWorkspace" class="hidden bg-[#121215] border border-[#27272a] rounded-2xl p-6 flex flex-col md:flex-row gap-6">
+        <!-- Preview Column -->
+        <div class="flex-1 flex flex-col items-center justify-center bg-[#09090b] border border-[#27272a] rounded-xl p-4 min-h-[260px] relative">
+          <img id="imagePreview" src="" alt="Preview" class="max-h-[220px] max-w-full object-contain rounded-lg shadow-sm" />
+          <div class="mt-3 flex items-center gap-3 text-xs text-[#71717a] font-mono">
+            <span id="imgOriginalMeta">1920x1080</span>
+            <span>•</span>
+            <span id="imgOriginalSize">0 KB</span>
+          </div>
+          <button onclick="resetImage()" class="absolute top-3 right-3 text-xs text-[#71717a] hover:text-white bg-[#18181b] border border-[#27272a] px-2 py-1 rounded">
+            Replace
+          </button>
+        </div>
+
+        <!-- Controls Column -->
+        <div class="w-full md:w-80 flex flex-col justify-between gap-6">
+          
+          <!-- Compressor Controls -->
+          <div id="ctrlCompress" class="space-y-4">
+            <div class="flex items-center justify-between text-xs">
+              <label class="text-[#a1a1aa] font-medium">Quality Level</label>
+              <span id="qualityVal" class="font-mono text-white">80%</span>
+            </div>
+            <input type="range" id="qualitySlider" min="10" max="100" value="80" class="w-full accent-indigo-500 cursor-pointer" oninput="updateCompressorPreview()" />
+            <div class="text-xs bg-[#18181b] p-3 rounded-lg border border-[#27272a] space-y-1">
+              <div class="flex justify-between text-[#a1a1aa]">
+                <span>Est. Output Size:</span>
+                <span id="imgEstSize" class="text-emerald-400 font-mono font-medium">Calculating...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Format Converter Controls -->
+          <div id="ctrlConvert" class="hidden space-y-4">
+            <label class="text-xs text-[#a1a1aa] font-medium block">Convert Format To</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button onclick="selectTargetFormat('image/jpeg')" id="fmtJpg" class="py-2 text-xs font-mono font-medium rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-300">
+                JPG
+              </button>
+              <button onclick="selectTargetFormat('image/png')" id="fmtPng" class="py-2 text-xs font-mono font-medium rounded-lg border border-[#27272a] text-[#a1a1aa] hover:text-white">
+                PNG
+              </button>
+              <button onclick="selectTargetFormat('image/webp')" id="fmtWebp" class="py-2 text-xs font-mono font-medium rounded-lg border border-[#27272a] text-[#a1a1aa] hover:text-white">
+                WebP
+              </button>
+            </div>
+          </div>
+
+          <!-- Dimension Resizer Controls -->
+          <div id="ctrlResize" class="hidden space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs text-[#a1a1aa] mb-1 block">Width (px)</label>
+                <input type="number" id="resizeWidth" class="w-full bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" oninput="handleResizeWidth()" />
+              </div>
+              <div>
+                <label class="text-xs text-[#a1a1aa] mb-1 block">Height (px)</label>
+                <input type="number" id="resizeHeight" class="w-full bg-[#18181b] border border-[#27272a] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono" oninput="handleResizeHeight()" />
+              </div>
+            </div>
+            <label class="flex items-center gap-2 text-xs text-[#a1a1aa] cursor-pointer select-none">
+              <input type="checkbox" id="aspectLock" checked class="rounded accent-indigo-500">
+              Lock Aspect Ratio
+            </label>
+          </div>
+
+          <!-- Action Button -->
+          <button onclick="processAndDownloadImage()" class="w-full py-2.5 rounded-xl bg-white text-[#09090b] font-medium text-xs hover:bg-[#e4e4e7] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Download Processed File
+          </button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==================== PDF SUITE SECTION ==================== -->
+    <section id="pdfSection" class="hidden w-full max-w-3xl flex flex-col gap-6">
+      
+      <!-- Sub-tool Tabs -->
+      <div class="flex items-center justify-center gap-2">
+        <button onclick="switchPdfTool('merge')" id="btnPdfMerge" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-indigo-500/30 bg-indigo-500/10 text-indigo-300">
+          PDF Merger
+        </button>
+        <button onclick="switchPdfTool('img2pdf')" id="btnPdfImg2Pdf" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-[#27272a] text-[#a1a1aa] hover:bg-[#18181b] hover:text-white">
+          Images to PDF
+        </button>
+      </div>
+
+      <!-- PDF Dropzone -->
+      <div id="pdfDropzone" class="border-2 border-dashed border-[#27272a] hover:border-[#3f3f46] transition-colors rounded-2xl p-10 flex flex-col items-center justify-center cursor-pointer bg-[#0f0f11]/50 relative group">
+        <input type="file" id="pdfInput" multiple accept="application/pdf,image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handlePdfUpload(event)" />
+        <div class="w-12 h-12 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 text-[#a1a1aa]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        </div>
+        <p class="text-sm font-medium text-white mb-1">Drop files here to combine</p>
+        <p class="text-xs text-[#71717a]" id="pdfDropNotice">Select multiple PDF files to merge into one</p>
+      </div>
+
+      <!-- File Queue & Process Area -->
+      <div id="pdfQueueContainer" class="hidden bg-[#121215] border border-[#27272a] rounded-2xl p-6 flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b border-[#27272a] pb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-[#a1a1aa]">Files in Queue (<span id="pdfQueueCount">0</span>)</span>
+          <button onclick="clearPdfQueue()" class="text-xs text-rose-400 hover:text-rose-300">Clear All</button>
+        </div>
+
+        <!-- File List -->
+        <div id="pdfQueueList" class="flex flex-col gap-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+          <!-- Dynamically populated rows -->
+        </div>
+
+        <!-- Merge Action Button -->
+        <button id="btnExecutePdf" onclick="executePdfOperation()" class="w-full mt-2 py-2.5 rounded-xl bg-white text-[#09090b] font-medium text-xs hover:bg-[#e4e4e7] active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+          Merge & Download Single PDF
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Clean Minimal Footer -->
+  <footer class="border-t border-[#27272a] py-6 text-center text-xs text-[#71717a]">
+    Built client-side • Zero data stored on external servers
+  </footer>
+
+  <!-- ==================== LOGIC LAYER ==================== -->
+  <script>
+    // Global App State
+    let activeCategory = 'image';
+    let activeImgTool = 'compress';
+    let activePdfTool = 'merge';
+
+    let currentFile = null;
+    let originalImage = null;
+    let targetFormat = 'image/jpeg';
+    let aspectRatio = 1;
+
+    let pdfQueue = [];
+
+    // --- Tab Navigation ---
+    function switchCategory(cat) {
+      activeCategory = cat;
+      const navImg = document.getElementById('navImage');
+      const navPdf = document.getElementById('navPdf');
+      const imgSec = document.getElementById('imageSection');
+      const pdfSec = document.getElementById('pdfSection');
+
+      if (cat === 'image') {
+        navImg.className = "px-4 py-1.5 rounded-lg text-xs font-medium transition-all bg-[#27272a] text-white";
+        navPdf.className = "px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[#a1a1aa] hover:text-white";
+        imgSec.classList.remove('hidden');
+        pdfSec.classList.add('hidden');
+      } else {
+        navPdf.className = "px-4 py-1.5 rounded-lg text-xs font-medium transition-all bg-[#27272a] text-white";
+        navImg.className = "px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-[#a1a1aa] hover:text-white";
+        pdfSec.classList.remove('hidden');
+        imgSec.classList.add('hidden');
+      }
+    }
+
+    // --- Sub-tool Switchers ---
+    function switchImgTool(tool) {
+      activeImgTool = tool;
+      ['compress', 'convert', 'resize'].forEach(t => {
+        const btn = document.getElementById(`btnTool${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const ctrl = document.getElementById(`ctrl${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (t === tool) {
+          btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium border border-indigo-500/30 bg-indigo-500/10 text-indigo-300";
+          ctrl.classList.remove('hidden');
+        } else {
+          btn.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium border border-[#27272a] text-[#a1a1aa] hover:bg-[#18181b] hover:text-white";
+          ctrl.classList.add('hidden');
+        }
+      });
+      if (currentFile) updateCompressorPreview();
+    }
+
+    function switchPdfTool(tool) {
+      activePdfTool = tool;
+      const btnMerge = document.getElementById('btnPdfMerge');
+      const btnImg2Pdf = document.getElementById('btnPdfImg2Pdf');
+      const notice = document.getElementById('pdfDropNotice');
+      const execBtn = document.getElementById('btnExecutePdf');
+      const input = document.getElementById('pdfInput');
+
+      clearPdfQueue();
+
+      if (tool === 'merge') {
+        btnMerge.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium border border-indigo-500/30 bg-indigo-500/10 text-indigo-300";
+        btnImg2Pdf.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium border border-[#27272a] text-[#a1a1aa] hover:bg-[#18181b] hover:text-white";
+        notice.textContent = "Select multiple PDF files to merge into one";
+        execBtn.textContent = "Merge & Download Single PDF";
+        input.accept = "application/pdf";
+      } else {
+        btnImg2Pdf.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium border border-indigo-500/30 bg-indigo-500/10 text-indigo-300";
+        btnMerge.className = "px-3.5 py-1.5 rounded-lg text-xs font-medium border border-[#27272a] text-[#a1a1aa] hover:bg-[#18181b] hover:text-white";
+        notice.textContent = "Select multiple images (PNG/JPG) to combine into a PDF";
+        execBtn.textContent = "Generate & Download PDF";
+        input.accept = "image/*";
+      }
+    }
+
+    // --- Image Processing Logic ---
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      currentFile = file;
+      document.getElementById('imgOriginalSize').textContent = formatBytes(file.size);
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        originalImage = new Image();
+        originalImage.onload = () => {
+          document.getElementById('imagePreview').src = event.target.result;
+          document.getElementById('imgOriginalMeta').textContent = `${originalImage.naturalWidth} × ${originalImage.naturalHeight}px`;
+          
+          document.getElementById('resizeWidth').value = originalImage.naturalWidth;
+          document.getElementById('resizeHeight').value = originalImage.naturalHeight;
+          aspectRatio = originalImage.naturalWidth / originalImage.naturalHeight;
+
+          document.getElementById('imageDropzone').classList.add('hidden');
+          document.getElementById('imageWorkspace').classList.remove('hidden');
+
+          updateCompressorPreview();
+        };
+        originalImage.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetImage() {
+      currentFile = null;
+      originalImage = null;
+      document.getElementById('imgInput').value = '';
+      document.getElementById('imageDropzone').classList.remove('hidden');
+      document.getElementById('imageWorkspace').classList.add('hidden');
+    }
+
+    function handleResizeWidth() {
+      if (!document.getElementById('aspectLock').checked) return;
+      const w = document.getElementById('resizeWidth').value;
+      document.getElementById('resizeHeight').value = Math.round(w / aspectRatio);
+    }
+
+    function handleResizeHeight() {
+      if (!document.getElementById('aspectLock').checked) return;
+      const h = document.getElementById('resizeHeight').value;
+      document.getElementById('resizeWidth').value = Math.round(h * aspectRatio);
+    }
+
+    function selectTargetFormat(fmt) {
+      targetFormat = fmt;
+      const btns = {
+        'image/jpeg': document.getElementById('fmtJpg'),
+        'image/png': document.getElementById('fmtPng'),
+        'image/webp': document.getElementById('fmtWebp')
+      };
+      Object.keys(btns).forEach(key => {
+        if (key === fmt) {
+          btns[key].className = "py-2 text-xs font-mono font-medium rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-300";
+        } else {
+          btns[key].className = "py-2 text-xs font-mono font-medium rounded-lg border border-[#27272a] text-[#a1a1aa] hover:text-white";
+        }
+      });
+      updateCompressorPreview();
+    }
+
+    function updateCompressorPreview() {
+      if (!originalImage) return;
+      const quality = document.getElementById('qualitySlider').value / 100;
+      document.getElementById('qualityVal').textContent = `${Math.round(quality * 100)}%`;
+
+      // Draw onto offscreen canvas to estimate size
+      const canvas = document.createElement('canvas');
+      canvas.width = originalImage.naturalWidth;
+      canvas.height = originalImage.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(originalImage, 0, 0);
+
+      const mime = activeImgTool === 'convert' ? targetFormat : (currentFile.type === 'image/png' ? 'image/png' : 'image/jpeg');
+      canvas.toBlob((blob) => {
+        if (blob) {
+          document.getElementById('imgEstSize').textContent = formatBytes(blob.size);
+        }
+      }, mime, quality);
+    }
+
+    function processAndDownloadImage() {
+      if (!originalImage) return;
+
+      const canvas = document.createElement('canvas');
+      const targetW = activeImgTool === 'resize' ? parseInt(document.getElementById('resizeWidth').value) : originalImage.naturalWidth;
+      const targetH = activeImgTool === 'resize' ? parseInt(document.getElementById('resizeHeight').value) : originalImage.naturalHeight;
+      
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(originalImage, 0, 0, targetW, targetH);
+
+      const quality = document.getElementById('qualitySlider').value / 100;
+      let mime = currentFile.type;
+      let ext = 'jpg';
+
+      if (activeImgTool === 'convert') {
+        mime = targetFormat;
+        ext = targetFormat.split('/')[1];
+      } else if (activeImgTool === 'compress') {
+        mime = 'image/jpeg';
+        ext = 'jpg';
+      }
+
+      canvas.toBlob((blob) => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `optimized_${Date.now()}.${ext}`;
+        link.click();
+      }, mime, quality);
+    }
+
+    // --- PDF Suite Logic ---
+    function handlePdfUpload(e) {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+
+      files.forEach(f => pdfQueue.push(f));
+      renderPdfQueue();
+    }
+
+    function renderPdfQueue() {
+      const container = document.getElementById('pdfQueueContainer');
+      const list = document.getElementById('pdfQueueList');
+      const count = document.getElementById('pdfQueueCount');
+
+      if (!pdfQueue.length) {
+        container.classList.add('hidden');
+        return;
+      }
+
+      container.classList.remove('hidden');
+      count.textContent = pdfQueue.length;
+      list.innerHTML = '';
+
+      pdfQueue.forEach((file, idx) => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between p-2.5 rounded-lg bg-[#18181b] border border-[#27272a] text-xs";
+        row.innerHTML = `
+          <div class="flex items-center gap-2 overflow-hidden pr-2">
+            <span class="font-mono text-[#71717a]">${idx + 1}.</span>
+            <span class="truncate text-white font-medium">${file.name}</span>
+            <span class="text-[#71717a] font-mono">(${formatBytes(file.size)})</span>
+          </div>
+          <button onclick="removePdfItem(${idx})" class="text-[#71717a] hover:text-rose-400 p-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function removePdfItem(index) {
+      pdfQueue.splice(index, 1);
+      renderPdfQueue();
+    }
+
+    function clearPdfQueue() {
+      pdfQueue = [];
+      document.getElementById('pdfInput').value = '';
+      renderPdfQueue();
+    }
+
+    async function executePdfOperation() {
+      if (!pdfQueue.length) return;
+
+      const btn = document.getElementById('btnExecutePdf');
+      const originalText = btn.textContent;
+      btn.textContent = "Processing...";
+      btn.disabled = true;
+
+      try {
+        const mergedPdf = await PDFLib.PDFDocument.create();
+
+        if (activePdfTool === 'merge') {
+          for (const file of pdfQueue) {
+            const arrayBuffer = await file.arrayBuffer();
+            const donorPdf = await PDFLib.PDFDocument.load(arrayBuffer);
+            const copiedPages = await mergedPdf.copyPages(donorPdf, donorPdf.getPageIndices());
+            copiedPages.forEach(p => mergedPdf.addPage(p));
+          }
+        } else {
+          // Images to PDF
+          for (const file of pdfQueue) {
+            const arrayBuffer = await file.arrayBuffer();
+            let embeddedImage;
+            if (file.type === 'image/png') {
+              embeddedImage = await mergedPdf.embedPng(arrayBuffer);
+            } else {
+              embeddedImage = await mergedPdf.embedJpg(arrayBuffer);
+            }
+            const page = mergedPdf.addPage([embeddedImage.width, embeddedImage.height]);
+            page.drawImage(embeddedImage, {
+              x: 0,
+              y: 0,
+              width: embeddedImage.width,
+              height: embeddedImage.height,
+            });
+          }
+        }
+
+        const mergedPdfBytes = await mergedPdf.save();
+        const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `combined_${Date.now()}.pdf`;
+        link.click();
+      } catch (err) {
+        alert("Processing error. Please ensure files are valid and not password protected.");
+        console.error(err);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // Helper: Byte Formatter
+    function formatBytes(bytes, decimals = 1) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+  </script>
+</body>
+</html>
